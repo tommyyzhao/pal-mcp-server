@@ -1,0 +1,45 @@
+{
+  "_README": {
+    "description": "Model metadata for Cerebras Inference API (ZAI-GLM models).",
+    "documentation": "https://inference-docs.cerebras.ai/models/zai-glm-47",
+    "usage": "Models listed here are exposed directly through the Cerebras provider. Aliases are case-insensitive.",
+    "field_notes": "Matches providers/shared/model_capabilities.py.",
+    "field_descriptions": {
+      "model_name": "The model identifier (e.g., 'zai-glm-4.7')",
+      "aliases": "Array of short names users can type instead of the full model name",
+      "context_window": "Total number of tokens the model can process (input + output combined)",
+      "max_output_tokens": "Maximum number of tokens the model can generate in a single response",
+      "supports_extended_thinking": "Whether the model supports extended reasoning tokens",
+      "supports_json_mode": "Whether the model can guarantee valid JSON output",
+      "supports_function_calling": "Whether the model supports function/tool calling",
+      "supports_images": "Whether the model can process images/visual input",
+      "supports_temperature": "Whether the model accepts temperature parameter in API calls",
+      "description": "Human-readable description of the model",
+      "intelligence_score": "1-20 human rating used as the primary signal for auto-mode model ordering"
+    }
+  },
+  "models": [
+    {
+      "model_name": "zai-glm-4.7",
+      "friendly_name": "Cerebras (zai-glm-4.7)",
+      "aliases": [
+        "cerebras",
+        "glm",
+        "glm-4.7",
+        "zai",
+        "zai-glm"
+      ],
+      "intelligence_score": 14,
+      "description": "Cerebras ZAI-GLM 4.7 — fast inference (~1000 tok/s), reasoning model with tool calling",
+      "context_window": 131072,
+      "max_output_tokens": 40000,
+      "supports_extended_thinking": true,
+      "supports_system_prompts": true,
+      "supports_streaming": true,
+      "supports_function_calling": true,
+      "supports_json_mode": true,
+      "supports_images": false,
+      "supports_temperature": true
+    }
+  ]
+}

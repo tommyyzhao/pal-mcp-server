@@ -15,3 +15,4 @@ class ProviderType(Enum):
     OPENROUTER = "openrouter"
     CUSTOM = "custom"
     DIAL = "dial"
+    CEREBRAS = "cerebras"  # Cerebras Inference (ZAI-GLM models)
