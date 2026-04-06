@@ -82,7 +82,7 @@ class TestCerebrasProvider:
         assert capabilities.context_window == 131072
         assert capabilities.max_output_tokens == 40000
         assert capabilities.provider == ProviderType.CEREBRAS
-        assert capabilities.supports_extended_thinking is True
+        assert capabilities.supports_extended_thinking is False
         assert capabilities.supports_system_prompts is True
         assert capabilities.supports_streaming is True
         assert capabilities.supports_function_calling is True
@@ -90,7 +90,7 @@ class TestCerebrasProvider:
         assert capabilities.supports_images is False
         assert capabilities.supports_temperature is True
 
-        # Test temperature range
+        # Test temperature range (default range constraint from registry)
         assert capabilities.temperature_constraint.min_temp == 0.0
         assert capabilities.temperature_constraint.max_temp == 2.0
         assert capabilities.temperature_constraint.default_temp == 0.3
@@ -114,10 +114,10 @@ class TestCerebrasProvider:
             provider.get_capabilities("invalid-model")
 
     def test_extended_thinking_flags(self):
-        """Cerebras capabilities should expose extended thinking support correctly."""
+        """Cerebras does not support extended thinking (no reasoning-token protocol)."""
         provider = CerebrasModelProvider("test-key")
 
-        thinking_aliases = [
+        all_aliases = [
             "zai-glm-4.7",
             "cerebras",
             "glm",
@@ -125,8 +125,8 @@ class TestCerebrasProvider:
             "zai",
             "zai-glm",
         ]
-        for alias in thinking_aliases:
-            assert provider.get_capabilities(alias).supports_extended_thinking is True
+        for alias in all_aliases:
+            assert provider.get_capabilities(alias).supports_extended_thinking is False
 
     def test_provider_type(self):
         """Test provider type identification."""
@@ -218,7 +218,7 @@ class TestCerebrasProvider:
         assert hasattr(config, "supports_extended_thinking")
         assert hasattr(config, "aliases")
         assert config.context_window == 131072
-        assert config.supports_extended_thinking is True
+        assert config.supports_extended_thinking is False
         assert config.max_output_tokens == 40000
 
         # Check aliases are correctly structured
@@ -285,8 +285,6 @@ class TestCerebrasProvider:
     @patch("providers.openai_compatible.OpenAI")
     def test_generate_content_other_aliases(self, mock_openai_class):
         """Test other alias resolutions in generate_content."""
-        from unittest.mock import MagicMock
-
         # Set up mock
         mock_client = MagicMock()
         mock_openai_class.return_value = mock_client

@@ -112,7 +112,6 @@ def test_error_listing_respects_env_restrictions(monkeypatch, reset_registry):
 
     for var in ("XAI_API_KEY", "CEREBRAS_API_KEY", "CUSTOM_API_URL", "CUSTOM_API_KEY", "DIAL_API_KEY"):
         monkeypatch.delenv(var, raising=False)
-        monkeypatch.delenv(var, raising=False)
     for azure_var in (
         "AZURE_OPENAI_API_KEY",
         "AZURE_OPENAI_ENDPOINT",

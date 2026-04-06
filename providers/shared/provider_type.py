@@ -12,7 +12,7 @@ class ProviderType(Enum):
     OPENAI = "openai"
     AZURE = "azure"
     XAI = "xai"
-    OPENROUTER = "openrouter"
-    CUSTOM = "custom"
+    CEREBRAS = "cerebras"
     DIAL = "dial"
-    CEREBRAS = "cerebras"  # Cerebras Inference (ZAI-GLM models)
+    CUSTOM = "custom"
+    OPENROUTER = "openrouter"

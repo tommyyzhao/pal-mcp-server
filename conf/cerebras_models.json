@@ -30,16 +30,17 @@
         "zai-glm"
       ],
       "intelligence_score": 14,
-      "description": "Cerebras ZAI-GLM 4.7 — fast inference (~1000 tok/s), reasoning model with tool calling",
+      "description": "Cerebras ZAI-GLM 4.7 — fast inference (~1000 tok/s), 128K context, reasoning model with tool calling",
       "context_window": 131072,
       "max_output_tokens": 40000,
-      "supports_extended_thinking": true,
+      "supports_extended_thinking": false,
       "supports_system_prompts": true,
       "supports_streaming": true,
       "supports_function_calling": true,
       "supports_json_mode": true,
       "supports_images": false,
-      "supports_temperature": true
+      "supports_temperature": true,
+      "temperature_constraint": "range"
     }
   ]
 }

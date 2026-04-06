@@ -28,13 +28,11 @@ class CerebrasModelProvider(RegistryBackedProviderMixin, OpenAICompatibleProvide
     REGISTRY_CLASS = CerebrasModelRegistry
     MODEL_CAPABILITIES: ClassVar[dict[str, ModelCapabilities]] = {}
 
-    # Canonical model identifiers used for category routing.
+    # Canonical model identifier — single-model provider for now.
     PRIMARY_MODEL = "zai-glm-4.7"
-    FALLBACK_MODEL = "zai-glm-4.7"
 
     def __init__(self, api_key: str, **kwargs):
         """Initialize Cerebras provider with API key."""
-        # Set Cerebras base URL
         kwargs.setdefault("base_url", "https://api.cerebras.ai/v1")
         self._ensure_registry()
         super().__init__(api_key, **kwargs)
@@ -54,34 +52,13 @@ class CerebrasModelProvider(RegistryBackedProviderMixin, OpenAICompatibleProvide
         Returns:
             Preferred model name or None
         """
-        from tools.models import ToolModelCategory
-
         if not allowed_models:
             return None
 
-        if category == ToolModelCategory.EXTENDED_REASONING:
-            # Prefer zai-glm-4.7 for advanced reasoning tasks
-            if self.PRIMARY_MODEL in allowed_models:
-                return self.PRIMARY_MODEL
-            if self.FALLBACK_MODEL in allowed_models:
-                return self.FALLBACK_MODEL
-            return allowed_models[0]
-
-        elif category == ToolModelCategory.FAST_RESPONSE:
-            # zai-glm-4.7 is the only model, use it
-            if self.PRIMARY_MODEL in allowed_models:
-                return self.PRIMARY_MODEL
-            if self.FALLBACK_MODEL in allowed_models:
-                return self.FALLBACK_MODEL
-            return allowed_models[0]
-
-        else:  # BALANCED or default
-            # zai-glm-4.7 is the only model, use it
-            if self.PRIMARY_MODEL in allowed_models:
-                return self.PRIMARY_MODEL
-            if self.FALLBACK_MODEL in allowed_models:
-                return self.FALLBACK_MODEL
-            return allowed_models[0]
+        # Single-model provider: return PRIMARY_MODEL if allowed, else first available.
+        if self.PRIMARY_MODEL in allowed_models:
+            return self.PRIMARY_MODEL
+        return allowed_models[0]
 
 
 # Load registry data at import time
