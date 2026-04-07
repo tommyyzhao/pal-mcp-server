@@ -275,13 +275,13 @@ class TestCerebrasProvider:
         provider = CerebrasModelProvider("test-key")
         all_models = ["gpt-oss-120b", "qwen-3-235b-a22b-instruct-2507", "zai-glm-4.7", "llama3.1-8b"]
 
-        # EXTENDED_REASONING → gpt-oss-120b (strongest reasoner)
+        # BALANCED → zai-glm-4.7 (default; only model on Cerebras Code plan)
+        assert provider.get_preferred_model(ToolModelCategory.BALANCED, all_models) == "zai-glm-4.7"
+
+        # EXTENDED_REASONING → gpt-oss-120b (strongest reasoner; paid tier)
         assert provider.get_preferred_model(ToolModelCategory.EXTENDED_REASONING, all_models) == "gpt-oss-120b"
 
-        # BALANCED → qwen-3-235b (frontier quality)
-        assert provider.get_preferred_model(ToolModelCategory.BALANCED, all_models) == "qwen-3-235b-a22b-instruct-2507"
-
-        # FAST_RESPONSE → llama3.1-8b (fastest small model)
+        # FAST_RESPONSE → llama3.1-8b (fastest small model; paid tier)
         assert provider.get_preferred_model(ToolModelCategory.FAST_RESPONSE, all_models) == "llama3.1-8b"
 
     def test_get_preferred_model_fallback(self):
@@ -289,6 +289,10 @@ class TestCerebrasProvider:
         from tools.models import ToolModelCategory
 
         provider = CerebrasModelProvider("test-key")
+
+        # Code plan (zai-glm-4.7 only) → always returns zai-glm-4.7 for any category
+        for cat in [ToolModelCategory.BALANCED, ToolModelCategory.EXTENDED_REASONING, ToolModelCategory.FAST_RESPONSE]:
+            assert provider.get_preferred_model(cat, ["zai-glm-4.7"]) == "zai-glm-4.7"
 
         # Without gpt-oss-120b, EXTENDED_REASONING falls back to qwen3
         assert (

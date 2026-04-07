@@ -23,9 +23,9 @@ class CerebrasModelProvider(RegistryBackedProviderMixin, OpenAICompatibleProvide
     maps tool-category preferences to the appropriate Cerebras model.
 
     Model routing by category:
-      EXTENDED_REASONING → gpt-oss-120b  (strongest reasoning, ~3000 tok/s)
-      BALANCED           → qwen-3-235b   (frontier quality, ~1400 tok/s)
-      FAST_RESPONSE      → llama3.1-8b   (fastest small model, ~2200 tok/s)
+      BALANCED           → zai-glm-4.7   (default; only model on Cerebras Code plan)
+      EXTENDED_REASONING → gpt-oss-120b  (strongest reasoning, ~3000 tok/s; paid tier)
+      FAST_RESPONSE      → llama3.1-8b   (fastest small model, ~2200 tok/s; paid tier)
     """
 
     FRIENDLY_NAME = "Cerebras"
@@ -34,8 +34,10 @@ class CerebrasModelProvider(RegistryBackedProviderMixin, OpenAICompatibleProvide
     MODEL_CAPABILITIES: ClassVar[dict[str, ModelCapabilities]] = {}
 
     # Category routing — ordered preference lists (first available wins).
+    # zai-glm-4.7 is the default: it is the only model on the Cerebras Code
+    # (free) plan and must always be the BALANCED fallback.
     _REASONING_PREFERENCE = ["gpt-oss-120b", "qwen-3-235b-a22b-instruct-2507", "zai-glm-4.7", "llama3.1-8b"]
-    _BALANCED_PREFERENCE = ["qwen-3-235b-a22b-instruct-2507", "gpt-oss-120b", "zai-glm-4.7", "llama3.1-8b"]
+    _BALANCED_PREFERENCE = ["zai-glm-4.7", "qwen-3-235b-a22b-instruct-2507", "gpt-oss-120b", "llama3.1-8b"]
     _FAST_PREFERENCE = ["llama3.1-8b", "zai-glm-4.7", "qwen-3-235b-a22b-instruct-2507", "gpt-oss-120b"]
 
     def __init__(self, api_key: str, **kwargs):
