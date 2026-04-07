@@ -40,7 +40,7 @@ class ModelProviderRegistry:
         ProviderType.OPENAI,  # Direct OpenAI access
         ProviderType.AZURE,  # Azure-hosted OpenAI deployments
         ProviderType.XAI,  # Direct X.AI GROK access
-        ProviderType.CEREBRAS,  # Cerebras Inference (ZAI-GLM models)
+        ProviderType.CEREBRAS,  # Cerebras Inference (ZAI-GLM, GPT-OSS, Qwen3, Llama)
         ProviderType.DIAL,  # DIAL unified API access
         ProviderType.CUSTOM,  # Local/self-hosted models
         ProviderType.OPENROUTER,  # Catch-all for cloud models

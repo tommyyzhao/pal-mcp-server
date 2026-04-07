@@ -466,9 +466,9 @@ def configure_providers():
     # Check for Cerebras API key
     cerebras_key = get_env("CEREBRAS_API_KEY")
     if cerebras_key and cerebras_key != "your_cerebras_api_key_here":
-        valid_providers.append("Cerebras (ZAI-GLM)")
+        valid_providers.append("Cerebras")
         has_native_apis = True
-        logger.info("Cerebras API key found - ZAI-GLM models available")
+        logger.info("Cerebras API key found - Cerebras Inference models available")
 
     # Check for DIAL API key
     dial_key = get_env("DIAL_API_KEY")
