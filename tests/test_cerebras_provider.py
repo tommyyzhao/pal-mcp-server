@@ -203,30 +203,113 @@ class TestCerebrasProvider:
         assert capabilities.friendly_name == "Cerebras (zai-glm-4.7)"
 
     def test_supported_models_structure(self):
-        """Test that MODEL_CAPABILITIES has the correct structure."""
+        """Test that MODEL_CAPABILITIES has all four models with correct structure."""
         provider = CerebrasModelProvider("test-key")
 
-        # Check that all expected base models are present
-        assert "zai-glm-4.7" in provider.MODEL_CAPABILITIES
-
-        # Check model configs have required fields
         from providers.shared import ModelCapabilities
 
-        config = provider.MODEL_CAPABILITIES["zai-glm-4.7"]
-        assert isinstance(config, ModelCapabilities)
-        assert hasattr(config, "context_window")
-        assert hasattr(config, "supports_extended_thinking")
-        assert hasattr(config, "aliases")
-        assert config.context_window == 131072
-        assert config.supports_extended_thinking is False
-        assert config.max_output_tokens == 40000
+        expected_models = {
+            "gpt-oss-120b": {"context_window": 131072, "max_output_tokens": 40000, "intelligence_score": 17},
+            "qwen-3-235b-a22b-instruct-2507": {
+                "context_window": 131072,
+                "max_output_tokens": 40000,
+                "intelligence_score": 16,
+            },
+            "zai-glm-4.7": {"context_window": 131072, "max_output_tokens": 40000, "intelligence_score": 14},
+            "llama3.1-8b": {"context_window": 32768, "max_output_tokens": 8192, "intelligence_score": 9},
+        }
+        for model_name, expected in expected_models.items():
+            assert model_name in provider.MODEL_CAPABILITIES, f"{model_name} missing from MODEL_CAPABILITIES"
+            config = provider.MODEL_CAPABILITIES[model_name]
+            assert isinstance(config, ModelCapabilities)
+            assert config.context_window == expected["context_window"], f"{model_name} context_window mismatch"
+            assert config.max_output_tokens == expected["max_output_tokens"], f"{model_name} max_output_tokens mismatch"
+            assert config.supports_extended_thinking is False, f"{model_name} should not claim extended thinking"
 
-        # Check aliases are correctly structured
-        assert "cerebras" in config.aliases
-        assert "glm" in config.aliases
-        assert "glm-4.7" in config.aliases
-        assert "zai" in config.aliases
-        assert "zai-glm" in config.aliases
+        # Spot-check aliases
+        assert "cerebras" in provider.MODEL_CAPABILITIES["zai-glm-4.7"].aliases
+        assert "gpt-oss" in provider.MODEL_CAPABILITIES["gpt-oss-120b"].aliases
+        assert "qwen3" in provider.MODEL_CAPABILITIES["qwen-3-235b-a22b-instruct-2507"].aliases
+        assert "llama8b" in provider.MODEL_CAPABILITIES["llama3.1-8b"].aliases
+
+    def test_new_model_capabilities_gpt_oss(self):
+        """Test gpt-oss-120b capabilities and alias resolution."""
+        provider = CerebrasModelProvider("test-key")
+
+        for alias in ("gpt-oss-120b", "gpt-oss", "oss-120b", "openai-oss"):
+            caps = provider.get_capabilities(alias)
+            assert caps.model_name == "gpt-oss-120b"
+            assert caps.context_window == 131072
+            assert caps.max_output_tokens == 40000
+            assert caps.supports_function_calling is True
+            assert caps.supports_extended_thinking is False
+
+    def test_new_model_capabilities_qwen3(self):
+        """Test qwen-3-235b capabilities and alias resolution."""
+        provider = CerebrasModelProvider("test-key")
+
+        for alias in ("qwen-3-235b-a22b-instruct-2507", "qwen3", "qwen-3", "qwen235b", "qwen3-235b"):
+            caps = provider.get_capabilities(alias)
+            assert caps.model_name == "qwen-3-235b-a22b-instruct-2507"
+            assert caps.context_window == 131072
+            assert caps.max_output_tokens == 40000
+            assert caps.supports_function_calling is True
+            assert caps.supports_extended_thinking is False
+
+    def test_new_model_capabilities_llama(self):
+        """Test llama3.1-8b capabilities and alias resolution."""
+        provider = CerebrasModelProvider("test-key")
+
+        for alias in ("llama3.1-8b", "llama8b", "llama-8b", "llama3.1", "llama3-8b"):
+            caps = provider.get_capabilities(alias)
+            assert caps.model_name == "llama3.1-8b"
+            assert caps.context_window == 32768
+            assert caps.max_output_tokens == 8192
+            assert caps.supports_function_calling is True
+            assert caps.supports_extended_thinking is False
+
+    def test_get_preferred_model_routing(self):
+        """Test category-based model routing across all four models."""
+        from tools.models import ToolModelCategory
+
+        provider = CerebrasModelProvider("test-key")
+        all_models = ["gpt-oss-120b", "qwen-3-235b-a22b-instruct-2507", "zai-glm-4.7", "llama3.1-8b"]
+
+        # EXTENDED_REASONING → gpt-oss-120b (strongest reasoner)
+        assert provider.get_preferred_model(ToolModelCategory.EXTENDED_REASONING, all_models) == "gpt-oss-120b"
+
+        # BALANCED → qwen-3-235b (frontier quality)
+        assert provider.get_preferred_model(ToolModelCategory.BALANCED, all_models) == "qwen-3-235b-a22b-instruct-2507"
+
+        # FAST_RESPONSE → llama3.1-8b (fastest small model)
+        assert provider.get_preferred_model(ToolModelCategory.FAST_RESPONSE, all_models) == "llama3.1-8b"
+
+    def test_get_preferred_model_fallback(self):
+        """Test category routing falls back gracefully when top choice unavailable."""
+        from tools.models import ToolModelCategory
+
+        provider = CerebrasModelProvider("test-key")
+
+        # Without gpt-oss-120b, EXTENDED_REASONING falls back to qwen3
+        assert (
+            provider.get_preferred_model(
+                ToolModelCategory.EXTENDED_REASONING,
+                ["qwen-3-235b-a22b-instruct-2507", "zai-glm-4.7"],
+            )
+            == "qwen-3-235b-a22b-instruct-2507"
+        )
+
+        # Without llama3.1-8b, FAST_RESPONSE falls back to zai-glm-4.7
+        assert (
+            provider.get_preferred_model(
+                ToolModelCategory.FAST_RESPONSE,
+                ["zai-glm-4.7", "gpt-oss-120b"],
+            )
+            == "zai-glm-4.7"
+        )
+
+        # Empty list → None
+        assert provider.get_preferred_model(ToolModelCategory.BALANCED, []) is None
 
     @patch("providers.openai_compatible.OpenAI")
     def test_generate_content_resolves_alias_before_api_call(self, mock_openai_class):

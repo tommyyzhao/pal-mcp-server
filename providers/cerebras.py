@@ -17,10 +17,15 @@ logger = logging.getLogger(__name__)
 
 
 class CerebrasModelProvider(RegistryBackedProviderMixin, OpenAICompatibleProvider):
-    """Integration for Cerebras Inference API (ZAI-GLM models).
+    """Integration for Cerebras Inference API.
 
     Publishes capability metadata for the officially supported deployments and
     maps tool-category preferences to the appropriate Cerebras model.
+
+    Model routing by category:
+      EXTENDED_REASONING → gpt-oss-120b  (strongest reasoning, ~3000 tok/s)
+      BALANCED           → qwen-3-235b   (frontier quality, ~1400 tok/s)
+      FAST_RESPONSE      → llama3.1-8b   (fastest small model, ~2200 tok/s)
     """
 
     FRIENDLY_NAME = "Cerebras"
@@ -28,8 +33,10 @@ class CerebrasModelProvider(RegistryBackedProviderMixin, OpenAICompatibleProvide
     REGISTRY_CLASS = CerebrasModelRegistry
     MODEL_CAPABILITIES: ClassVar[dict[str, ModelCapabilities]] = {}
 
-    # Canonical model identifier — single-model provider for now.
-    PRIMARY_MODEL = "zai-glm-4.7"
+    # Category routing — ordered preference lists (first available wins).
+    _REASONING_PREFERENCE = ["gpt-oss-120b", "qwen-3-235b-a22b-instruct-2507", "zai-glm-4.7", "llama3.1-8b"]
+    _BALANCED_PREFERENCE = ["qwen-3-235b-a22b-instruct-2507", "gpt-oss-120b", "zai-glm-4.7", "llama3.1-8b"]
+    _FAST_PREFERENCE = ["llama3.1-8b", "zai-glm-4.7", "qwen-3-235b-a22b-instruct-2507", "gpt-oss-120b"]
 
     def __init__(self, api_key: str, **kwargs):
         """Initialize Cerebras provider with API key."""
@@ -55,9 +62,18 @@ class CerebrasModelProvider(RegistryBackedProviderMixin, OpenAICompatibleProvide
         if not allowed_models:
             return None
 
-        # Single-model provider: return PRIMARY_MODEL if allowed, else first available.
-        if self.PRIMARY_MODEL in allowed_models:
-            return self.PRIMARY_MODEL
+        from tools.models import ToolModelCategory
+
+        if category == ToolModelCategory.EXTENDED_REASONING:
+            preference = self._REASONING_PREFERENCE
+        elif category == ToolModelCategory.FAST_RESPONSE:
+            preference = self._FAST_PREFERENCE
+        else:  # BALANCED or default
+            preference = self._BALANCED_PREFERENCE
+
+        for model in preference:
+            if model in allowed_models:
+                return model
         return allowed_models[0]
 
 
