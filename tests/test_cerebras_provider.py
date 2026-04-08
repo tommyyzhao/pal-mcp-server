@@ -159,7 +159,7 @@ class TestCerebrasProvider:
         assert provider.validate_model_name("llama3.1-8b") is False
         assert provider.validate_model_name("llama8b") is False
 
-    @patch.dict(os.environ, {"CEREBRAS_ALLOWED_MODELS": "zai-glm-4.7"})
+    @patch.dict(os.environ, {"CEREBRAS_API_KEY": "test-key", "CEREBRAS_ALLOWED_MODELS": "zai-glm-4.7"})
     def test_restrictions_filter_auto_mode_routing(self):
         """Auto-mode routing must respect CEREBRAS_ALLOWED_MODELS via the registry filter.
 
@@ -193,7 +193,7 @@ class TestCerebrasProvider:
         ):
             assert provider.get_preferred_model(cat, allowed) == "zai-glm-4.7"
 
-    @patch.dict(os.environ, {"CEREBRAS_ALLOWED_MODELS": "cerebras"})
+    @patch.dict(os.environ, {"CEREBRAS_API_KEY": "test-key", "CEREBRAS_ALLOWED_MODELS": "cerebras"})
     def test_multiple_model_restrictions(self):
         """Restrictions specified via alias must accept the canonical name too."""
         import utils.model_restrictions
