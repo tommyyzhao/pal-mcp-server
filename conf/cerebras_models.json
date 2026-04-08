@@ -28,7 +28,7 @@
         "openai-oss"
       ],
       "intelligence_score": 17,
-      "description": "OpenAI GPT-OSS 120B — ultra-fast inference (~3000 tok/s), 131K context, internal chain-of-thought reasoning, strong agentic/tool-use",
+      "description": "OpenAI GPT-OSS 120B — ultra-fast inference (~3000 tok/s), 128K context, internal chain-of-thought reasoning, strong agentic/tool-use",
       "context_window": 131072,
       "max_output_tokens": 40000,
       "supports_extended_thinking": false,
@@ -50,7 +50,7 @@
         "qwen3-235b"
       ],
       "intelligence_score": 16,
-      "description": "Qwen3-235B-A22B Instruct 2507 — fast inference (~1400 tok/s), 131K context, strong coding/reasoning/tool use",
+      "description": "Qwen3-235B-A22B Instruct 2507 — fast inference (~1400 tok/s), 128K context, strong coding/reasoning/tool use",
       "context_window": 131072,
       "max_output_tokens": 40000,
       "supports_extended_thinking": false,

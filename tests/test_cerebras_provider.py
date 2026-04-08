@@ -135,7 +135,7 @@ class TestCerebrasProvider:
 
     @patch.dict(os.environ, {"CEREBRAS_ALLOWED_MODELS": "zai-glm-4.7"})
     def test_model_restrictions(self):
-        """Test model restrictions functionality."""
+        """Test that CEREBRAS_ALLOWED_MODELS env var is wired into the restriction service."""
         # Clear cached restriction service
         import utils.model_restrictions
         from providers.registry import ModelProviderRegistry
@@ -149,21 +149,69 @@ class TestCerebrasProvider:
         assert provider.validate_model_name("zai-glm-4.7") is True
         assert provider.validate_model_name("cerebras") is True
 
-    @patch.dict(os.environ, {"CEREBRAS_ALLOWED_MODELS": "cerebras"})
-    def test_multiple_model_restrictions(self):
-        """Restrictions should allow aliases for Cerebras."""
-        # Clear cached restriction service
+        # Paid-tier models must be REJECTED when only zai-glm-4.7 is allowed.
+        # This catches the bug where CEREBRAS was missing from
+        # ModelRestrictionService.ENV_VARS and the env var was silently ignored.
+        assert provider.validate_model_name("gpt-oss-120b") is False
+        assert provider.validate_model_name("gpt-oss") is False
+        assert provider.validate_model_name("qwen-3-235b-a22b-instruct-2507") is False
+        assert provider.validate_model_name("qwen3") is False
+        assert provider.validate_model_name("llama3.1-8b") is False
+        assert provider.validate_model_name("llama8b") is False
+
+    @patch.dict(os.environ, {"CEREBRAS_ALLOWED_MODELS": "zai-glm-4.7"})
+    def test_restrictions_filter_auto_mode_routing(self):
+        """Auto-mode routing must respect CEREBRAS_ALLOWED_MODELS via the registry filter.
+
+        Regression test for the missing ENV_VARS wiring: the provider's
+        get_preferred_model() expects the registry to pre-filter allowed_models,
+        so the centralized restriction service must know about CEREBRAS.
+        """
         import utils.model_restrictions
         from providers.registry import ModelProviderRegistry
 
         utils.model_restrictions._restriction_service = None
         ModelProviderRegistry.reset_for_testing()
+        ModelProviderRegistry.register_provider(ProviderType.CEREBRAS, CerebrasModelProvider)
 
-        provider = CerebrasModelProvider("test-key")
+        provider = ModelProviderRegistry.get_provider(ProviderType.CEREBRAS)
+        assert provider is not None
+
+        # The registry's allowlist filter must return only zai-glm-4.7.
+        allowed = ModelProviderRegistry._get_allowed_models_for_provider(provider, ProviderType.CEREBRAS)
+        assert allowed == ["zai-glm-4.7"], f"Expected only zai-glm-4.7, got {allowed}"
+
+        # And category routing must therefore always return zai-glm-4.7,
+        # not gpt-oss-120b or llama3.1-8b — even for EXTENDED_REASONING/FAST_RESPONSE
+        # whose preference lists would otherwise pick those paid-tier models first.
+        from tools.models import ToolModelCategory
+
+        for cat in (
+            ToolModelCategory.BALANCED,
+            ToolModelCategory.EXTENDED_REASONING,
+            ToolModelCategory.FAST_RESPONSE,
+        ):
+            assert provider.get_preferred_model(cat, allowed) == "zai-glm-4.7"
+
+    @patch.dict(os.environ, {"CEREBRAS_ALLOWED_MODELS": "cerebras"})
+    def test_multiple_model_restrictions(self):
+        """Restrictions specified via alias must accept the canonical name too."""
+        import utils.model_restrictions
+        from providers.registry import ModelProviderRegistry
+
+        utils.model_restrictions._restriction_service = None
+        ModelProviderRegistry.reset_for_testing()
+        # Provider must be registered so the restriction service can resolve
+        # the "cerebras" alias to its canonical name during validation.
+        ModelProviderRegistry.register_provider(ProviderType.CEREBRAS, CerebrasModelProvider)
+        provider = ModelProviderRegistry.get_provider(ProviderType.CEREBRAS)
 
         # Alias should be allowed (resolves to zai-glm-4.7)
         assert provider.validate_model_name("cerebras") is True
         assert provider.validate_model_name("zai-glm-4.7") is True
+        # And paid-tier models must still be rejected
+        assert provider.validate_model_name("gpt-oss-120b") is False
+        assert provider.validate_model_name("llama3.1-8b") is False
 
     @patch.dict(os.environ, {"CEREBRAS_ALLOWED_MODELS": "zai-glm-4.7,cerebras,glm"})
     def test_both_shorthand_and_full_name_allowed(self):
